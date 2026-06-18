@@ -199,6 +199,17 @@ func main() {
 		return e.Next()
 	})
 
+	// Force serve command on Railway if no arguments are provided
+	if os.Getenv("RAILWAY_ENVIRONMENT") != "" || os.Getenv("PORT") != "" {
+		if len(os.Args) == 1 {
+			port := os.Getenv("PORT")
+			if port == "" {
+				port = "8080"
+			}
+			os.Args = append(os.Args, "serve", "--http=0.0.0.0:"+port)
+		}
+	}
+
 	if err := app.Start(); err != nil {
 		log.Fatal(err)
 	}
