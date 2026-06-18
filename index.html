@@ -256,10 +256,11 @@
                     const lat = location.location.lat;
                     const lon = location.location.lon;
                     
-                    const vanIcon = L.icon({
-                        iconUrl: "van.png",
-                        iconSize: [60, 40], // Ajuste o tamanho da van conforme necessário (largura, altura)
-                        iconAnchor: [30, 20] // O ponto central da imagem
+                    const vanIcon = L.divIcon({
+                        html: "🚐",
+                        className: "van-marker-icon",
+                        iconSize: [40, 40],
+                        iconAnchor: [20, 20]
                     });
 
                     const popupContent = `
