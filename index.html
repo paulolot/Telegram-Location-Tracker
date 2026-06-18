@@ -385,9 +385,7 @@
              */
             async loadLocations() {
                 try {
-                    const records = await this.pb.collection('locations').getFullList({
-                        sort: '-updated'
-                    });
+                    const records = await this.pb.collection('locations').getFullList();
 
                     this.locations = records;
                     this.buildUserPaths();
