@@ -9,7 +9,6 @@ import (
 	"math"
 	"net/http"
 	"os"
-	"os/signal"
 	"strings"
 
 	"github.com/go-telegram/bot"
