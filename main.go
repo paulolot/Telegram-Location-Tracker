@@ -230,8 +230,8 @@ func startTelegramBot(e *core.ServeEvent) {
 		return
 	}
 
-	log.Println("Telegram bot started successfully")
-	tgBot.Start(ctx)
+	log.Println("Telegram bot initialized successfully (Polling disabled to avoid Webhook conflicts)")
+	// tgBot.Start(ctx) // Disabled: The bot runs on a Webhook via Google Apps Script
 }
 
 // handler processes incoming Telegram messages, specifically location updates
