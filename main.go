@@ -94,6 +94,61 @@ func main() {
 			return e.HTML(http.StatusOK, html)
 		})
 
+		// API endpoint to receive location from iVan bot (Google Apps Script)
+		e.Router.POST("/api/location", func(e *core.RequestEvent) error {
+			var payload struct {
+				VehicleID string  `json:"vehicle_id"`
+				Lat       float64 `json:"lat"`
+				Lng       float64 `json:"lng"`
+				Timestamp int64   `json:"timestamp"`
+				Token     string  `json:"token"`
+			}
+
+			if err := e.BindBody(&payload); err != nil {
+				return e.BadRequestError("Invalid JSON payload", err)
+			}
+
+			// Simple secret token check
+			secretToken := os.Getenv("SECRET_TOKEN")
+			if secretToken != "" && payload.Token != secretToken {
+				return e.UnauthorizedError()
+			}
+
+			if payload.VehicleID == "" {
+				return e.BadRequestError("vehicle_id is required", nil)
+			}
+
+			// Create a location record in PocketBase
+			collection, err := e.App.FindCollectionByNameOrId("locations")
+			if err != nil {
+				return e.InternalServerError("Locations collection not found", err)
+			}
+
+			record := core.NewRecord(collection)
+			record.Set("user_id", payload.VehicleID)
+			record.Set("user_name", "Van - "+payload.VehicleID) // Could be dynamic
+			
+			// GeoPoint structure expected by PocketBase GeoPointField
+			// For pocketbase v0.22+ it uses types.GeoPoint or simply unmarshals it
+			// However, setting the field correctly via map might be easier.
+			// Let's use the appropriate method.
+			
+			// Try to set location field
+			record.Set("location", map[string]float64{
+				"lat": payload.Lat,
+				"lon": payload.Lng,
+			})
+
+			if err := e.App.Save(record); err != nil {
+				log.Printf("Failed to save location record: %v", err)
+				return e.InternalServerError("Failed to save location", err)
+			}
+
+			return e.JSON(200, map[string]string{
+				"status": "success",
+			})
+		}).Bind()
+
 		// API endpoint for sending messages to Telegram users from the web interface
 		e.Router.POST("/api/sendMessage", func(e *core.RequestEvent) error {
 			var request SendMessageRequest
@@ -130,6 +185,19 @@ func main() {
 
 		return e.Next()
 	})
+
+	// To handle the persistent volume in Railway, we check for an environment variable
+	// PB_DATA_DIR, or if running in Railway, default to "/railway/static"
+	dataDir := os.Getenv("PB_DATA_DIR")
+	if dataDir == "" {
+		if os.Getenv("RAILWAY_ENVIRONMENT") != "" {
+			dataDir = "/railway/static/pb_data"
+		} else {
+			dataDir = "./pb_data" // local fallback
+		}
+	}
+	
+	app.SetDataDir(dataDir)
 
 	if err := app.Start(); err != nil {
 		log.Fatal(err)

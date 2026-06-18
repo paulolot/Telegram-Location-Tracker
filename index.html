@@ -385,7 +385,7 @@
              */
             async loadLocations() {
                 try {
-                    const records = await this.pb.collection('location').getFullList({
+                    const records = await this.pb.collection('locations').getFullList({
                         sort: '-updated'
                     });
 
@@ -412,7 +412,7 @@
              */
             async setupRealtime() {
                 try {
-                    await this.pb.collection('location').subscribe('*', (e) => {
+                    await this.pb.collection('locations').subscribe('*', (e) => {
                         this.handleRealtimeUpdate(e);
                     });
                     this.isConnected = true;
