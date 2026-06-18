@@ -34,9 +34,8 @@ type SendMessageRequest struct {
 
 func main() {
 	// Load environment variables (BOT_TOKEN, etc.)
-	if err := godotenv.Load(); err != nil {
-		log.Fatal("Error loading .env file")
-	}
+	// We ignore the error because in Railway, variables are injected directly and there is no .env file
+	_ = godotenv.Load()
 
 	// To handle the persistent volume in Railway, we check for an environment variable
 	// PB_DATA_DIR, or if running in Railway, default to "/railway/static"
