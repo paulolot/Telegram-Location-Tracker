@@ -217,7 +217,7 @@ func main() {
 // startTelegramBot initializes and starts the Telegram bot with graceful shutdown
 func startTelegramBot(e *core.ServeEvent) {
 	// Setup context that cancels on interrupt signal for graceful shutdown
-	ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
+	// ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt) // Removed since ctx is unused
 
 	opts := []bot.Option{
 		bot.WithDefaultHandler(handler),
