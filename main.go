@@ -38,7 +38,20 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	app = pocketbase.New()
+	// To handle the persistent volume in Railway, we check for an environment variable
+	// PB_DATA_DIR, or if running in Railway, default to "/railway/static"
+	dataDir := os.Getenv("PB_DATA_DIR")
+	if dataDir == "" {
+		if os.Getenv("RAILWAY_ENVIRONMENT") != "" {
+			dataDir = "/railway/static/pb_data"
+		} else {
+			dataDir = "./pb_data" // local fallback
+		}
+	}
+
+	app = pocketbase.NewWithConfig(pocketbase.Config{
+		DefaultDataDir: dataDir,
+	})
 
 	// Enable auto-migration only in development (when running with 'go run')
 	// This allows PocketBase to automatically create migration files when collections change
@@ -111,7 +124,7 @@ func main() {
 			// Simple secret token check
 			secretToken := os.Getenv("SECRET_TOKEN")
 			if secretToken != "" && payload.Token != secretToken {
-				return e.UnauthorizedError()
+				return e.UnauthorizedError("Invalid token", nil)
 			}
 
 			if payload.VehicleID == "" {
@@ -185,19 +198,6 @@ func main() {
 
 		return e.Next()
 	})
-
-	// To handle the persistent volume in Railway, we check for an environment variable
-	// PB_DATA_DIR, or if running in Railway, default to "/railway/static"
-	dataDir := os.Getenv("PB_DATA_DIR")
-	if dataDir == "" {
-		if os.Getenv("RAILWAY_ENVIRONMENT") != "" {
-			dataDir = "/railway/static/pb_data"
-		} else {
-			dataDir = "./pb_data" // local fallback
-		}
-	}
-	
-	app.SetDataDir(dataDir)
 
 	if err := app.Start(); err != nil {
 		log.Fatal(err)
