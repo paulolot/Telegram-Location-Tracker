@@ -252,10 +252,22 @@
                 this.markers.forEach(marker => this.map.removeLayer(marker));
                 this.markers.clear();
 
+                const urlParams = new URLSearchParams(window.location.search);
+                const targetDriverId = urlParams.get('driver_id');
+
                 // Identifica a última localização de cada motorista (user_id)
                 const latestLocations = new Map();
+                const now = new Date();
+                const umHoraEmMilissegundos = 60 * 60 * 1000;
+
                 this.locations.forEach(location => {
-                    const userId = location.user_id;
+                    const userId = String(location.user_id);
+                    
+                    // Se foi passado um motorista específico na URL, ignora as outras vans
+                    if (targetDriverId && userId !== String(targetDriverId)) {
+                        return;
+                    }
+
                     const existing = latestLocations.get(userId);
                     
                     // Se não existir ou se a location atual for mais recente que a existente
@@ -265,6 +277,12 @@
                 });
 
                 latestLocations.forEach(location => {
+                    // Verifica se a coordenada tem mais de 1 hora
+                    const dataCoordenada = new Date(location.created);
+                    if (now - dataCoordenada > umHoraEmMilissegundos) {
+                        return; // Pula esta van (inativa)
+                    }
+
                     const lat = location.location.lat;
                     const lon = location.location.lon;
                     
@@ -278,7 +296,7 @@
                     const popupContent = `
                         <div class="message-content">
                             <div class="message-header">🚌 ${location.user_name || 'Sua Van Escolar'}</div>
-                            <div class="message-info">Em movimento...</div>
+                            <div class="message-info">Atualizado: ${dataCoordenada.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
                         </div>
                     `;
 
