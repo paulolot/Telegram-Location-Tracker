@@ -294,7 +294,7 @@
 
                 // Função auxiliar para interpretar a data do PocketBase ("2024-06-23 10:44:54.000Z")
                 const parsePBDate = (dateStr) => {
-                    if (!dateStr) return new Date();
+                    if (!dateStr) return new Date(0); // <-- CORREÇÃO: Retorna data antiga (1970) para invalidar
                     // Converte espaço em 'T' se necessário para que new Date() não falhe em alguns navegadores
                     return new Date(dateStr.replace(' ', 'T'));
                 };
