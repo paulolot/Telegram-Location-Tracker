@@ -107,8 +107,33 @@
         .message-header {
             font-weight: bold;
             font-size: 16px;
-            color: var(--black);
             margin-bottom: 5px;
+        }
+        
+        .waiting-overlay {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            z-index: 1000;
+            text-align: center;
+            border-left: 4px solid var(--primary);
+            max-width: 90%;
+            width: 350px;
+        }
+        .waiting-overlay h3 {
+            margin: 0 0 5px 0;
+            color: #374151;
+            font-size: 16px;
+        }
+        .waiting-overlay p {
+            margin: 0;
+            color: #6b7280;
+            font-size: 14px;
         }
 
         .message-info {
@@ -148,6 +173,12 @@
         <div x-show="loading" class="loading">
             Carregando mapa...
         </div>
+        
+        <div x-show="!hasActiveVans && !loading" class="waiting-overlay" style="display: none;" x-transition>
+            <h3>📍 Aguardando Localização...</h3>
+            <p>O motorista ainda não compartilhou a localização em tempo real para este trajeto ou a viagem já foi finalizada.</p>
+        </div>
+
         <div id="map" x-show="!loading"></div>
     </div>
 </div>
@@ -164,6 +195,7 @@
             loading: true,
             error: null,
             isConnected: false,
+            hasActiveVans: false,
 
             async init() {
                 try {
@@ -260,6 +292,13 @@
                 const now = new Date();
                 const umHoraEmMilissegundos = 60 * 60 * 1000;
 
+                // Função auxiliar para interpretar a data do PocketBase ("2024-06-23 10:44:54.000Z")
+                const parsePBDate = (dateStr) => {
+                    if (!dateStr) return new Date();
+                    // Converte espaço em 'T' se necessário para que new Date() não falhe em alguns navegadores
+                    return new Date(dateStr.replace(' ', 'T'));
+                };
+
                 this.locations.forEach(location => {
                     const userId = String(location.user_id);
                     
@@ -271,18 +310,27 @@
                     const existing = latestLocations.get(userId);
                     
                     // Se não existir ou se a location atual for mais recente que a existente
-                    if (!existing || new Date(location.created) > new Date(existing.created)) {
+                    if (!existing || parsePBDate(location.created) > parsePBDate(existing.created)) {
                         latestLocations.set(userId, location);
                     }
                 });
 
+                let activeVansFound = false;
+
                 latestLocations.forEach(location => {
                     // Verifica se a coordenada tem mais de 1 hora
-                    const dataCoordenada = new Date(location.created);
+                    const dataCoordenada = parsePBDate(location.created);
+                    
+                    // Se for Invalid Date (algo muito errado), descarta
+                    if (isNaN(dataCoordenada.getTime())) {
+                        return;
+                    }
+
                     if (now - dataCoordenada > umHoraEmMilissegundos) {
                         return; // Pula esta van (inativa)
                     }
 
+                    activeVansFound = true;
                     const lat = location.location.lat;
                     const lon = location.location.lon;
                     
@@ -308,6 +356,9 @@
                         
                     this.markers.set(location.id, marker);
                 });
+                
+                // Atualiza o estado da tela
+                this.hasActiveVans = activeVansFound;
             }
         }
     }
